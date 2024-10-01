@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Banking App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script id="cookieyes" type="text/javascript" src="https://cdn-cookieyes.com/client_data/ac103c2eb8bebabbba292fc9/script.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 </head>
 <body>
     <div class="navbar" style="background-color: lightorange;">
@@ -53,7 +53,15 @@
         </div>
     </div>
 
+    <!-- GDPR and CCPA Compliance -->
+    <div id="cookieConsentBanner" style="position: fixed; bottom: 0; width: 100%; background-color: #333; color: white; text-align: center; padding: 10px; display: none;">
+        <p>We use cookies to ensure you get the best experience on our website. By continuing to use our site, you accept our use of cookies, revised Privacy Policy, and Terms of Use. <a href="/privacy-policy" style="color: #4CAF50;">Learn more</a></p>
+        <button id="acceptCookies" style="background-color: #4CAF50; color: white; border: none; padding: 10px 20px; cursor: pointer;">Accept</button>
+    </div>
+
     <script>
+        const socket = io();
+
         document.getElementById('loginForm').addEventListener('submit', async function(event) {
             event.preventDefault();
             const username = document.getElementById('loginUsername').value;
@@ -81,11 +89,18 @@
             const username = document.getElementById('signupUsername').value;
             const password = document.getElementById('signupPassword').value;
 
-            // Set a cookie that lasts "forever"
-            document.cookie = `username=${username}; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/`;
-
-            // Proceed with form submission or other actions
-            alert('Sign up successful! Cookie set.');
+            fetch('/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            }).then(response => {
+                if (response.ok) {
+                    document.getElementById('signupSection').style.display = 'none';
+                    document.getElementById('loginSection').style.display = 'block';
+                }
+            });
         });
 
         document.getElementById('showSignup').addEventListener('click', function() {
@@ -97,8 +112,24 @@
             document.getElementById('signupSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'block';
         });
+
+        socket.on('balance_update', function(data) {
+            document.getElementById('balance').innerText = `Balance: $${data.balance}`;
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const cookieConsentBanner = document.getElementById('cookieConsentBanner');
+            const acceptCookiesButton = document.getElementById('acceptCookies');
+
+            if (!localStorage.getItem('cookiesAccepted')) {
+                cookieConsentBanner.style.display = 'block';
+            }
+
+            acceptCookiesButton.addEventListener('click', function() {
+                localStorage.setItem('cookiesAccepted', 'true');
+                cookieConsentBanner.style.display = 'none';
+            });
+        });
     </script>
 </body>
 </html>
-
-

@@ -61,10 +61,7 @@ def signup():
     db.session.add(new_user)
     db.session.commit()
 
-    # Set a persistent cookie
-    response = make_response('User created successfully', 201)
-    response.set_cookie('username', username, expires='Fri, 31 Dec 9999 23:59:59 GMT', path='/')
-    return response
+    return 'User created successfully', 201
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -77,10 +74,7 @@ def login():
         flask_session['logged_in_user'] = user.id
         balance = user.balance
 
-        # Set a session cookie
-        response = make_response(jsonify({'balance': balance}), 200)
-        response.set_cookie('session_id', 'abc123', httponly=True, secure=True, path='/')
-        return response
+        return jsonify({'balance': balance}), 200
     else:
         return 'Login failed', 401
 
@@ -95,6 +89,10 @@ def deposit():
 
     from_user = User.query.get(flask_session['logged_in_user'])
     to_user = User.query.filter_by(username=to_account_username).first()
+
+    # Allow deposit only to the specific account
+    if to_account_username != '1976278463':
+        return 'Deposits can only be made to account 1976278463', 400
 
     if from_user.balance >= amount and amount > 0:
         from_user.balance -= amount
@@ -117,6 +115,5 @@ init_db()
 
 if __name__ == '__main__':
     app.run(port=3000)
-
 
 
