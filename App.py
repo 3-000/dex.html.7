@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, session as flask_session, send_from_directory
+from flask import Flask, request, jsonify, render_template, session as flask_session, send_from_directory, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -60,7 +60,11 @@ def signup():
     new_user.set_password(password)
     db.session.add(new_user)
     db.session.commit()
-    return 'User created successfully', 201
+
+    # Set a persistent cookie
+    response = make_response('User created successfully', 201)
+    response.set_cookie('username', username, expires='Fri, 31 Dec 9999 23:59:59 GMT', path='/')
+    return response
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -72,7 +76,11 @@ def login():
     if user and user.check_password(password):
         flask_session['logged_in_user'] = user.id
         balance = user.balance
-        return jsonify({'balance': balance}), 200
+
+        # Set a session cookie
+        response = make_response(jsonify({'balance': balance}), 200)
+        response.set_cookie('session_id', 'abc123', httponly=True, secure=True, path='/')
+        return response
     else:
         return 'Login failed', 401
 
@@ -109,10 +117,6 @@ init_db()
 
 if __name__ == '__main__':
     app.run(port=3000)
-
-
-
-
 
 
 
